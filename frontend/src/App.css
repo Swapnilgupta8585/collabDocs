@@ -1,0 +1,20 @@
+.ql-editor {
+  font-family: "Roboto", sans-serif;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.ql-container {
+  border: none !important;
+}
+
+.ql-toolbar {
+  border: none !important;
+  border-bottom: 1px solid #ddd !important;
+}
+
+.ql-editor::-webkit-scrollbar {
+  display: none;
+}
+
+
