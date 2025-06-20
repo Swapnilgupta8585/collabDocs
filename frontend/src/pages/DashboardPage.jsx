@@ -3,11 +3,13 @@ import useAuthStore from "../store/authStore";
 import authService from "../services/authService";
 import docService from "../services/docService";
 import useDocStore from "../store/docStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import NewDocModal from "../components/DocModal";
 
 export default function DashboardPage() {
     const { user } = useAuthStore();
     const navigate = useNavigate();
+    const[showModal, setShowModal] = useState(false);
 
     const handleLogout = async () => {
         try {
@@ -36,19 +38,6 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [documents]);
 
-    const handleCreateNewDoc = async () => {
-        const name = prompt("Enter a name for your document");
-
-        if (name == null) return;
-
-        const finalName = name.trim() === '' ? "Untitled Document" : name.trim();
-        try{
-            const newDoc = await docService.createDoc(finalName);
-            navigate(`/editor/${newDoc.doc.id}`)
-        } catch(error){
-            console.error("Failed to create document:", error);
-        }
-    };
 
     return (
         <div className="min-h-screen bg-[#f8fafc] text-gray-900">
@@ -81,10 +70,11 @@ export default function DashboardPage() {
                             Welcome, {user?.full_name || "User"} 👋
                         </p>
                     </div>
-                    <button onClick={handleCreateNewDoc}
+                    <button onClick={() => setShowModal(true)}
                     className="px-5 py-2 rounded-full bg-blue-600 text-white text-sm shadow-md transition hover:bg-blue-700 hover:shadow-lg hover:scale-105 focus:outline-none">
                         + New Document
                     </button>
+                    {showModal && <NewDocModal onClose={() => setShowModal(false)}/>}
                 </div>
 
                 {/* Document Grid */}
