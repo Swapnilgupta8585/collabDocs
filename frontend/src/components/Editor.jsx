@@ -11,6 +11,7 @@ import { IndexeddbPersistence } from "y-indexeddb";
 import QuillBetterTable from "quill-better-table";
 import ImageResize from "quill-image-resize-module-react";
 import useDocStore from "../store/docStore";
+import docService from "../services/docService"
 
 // Register Quill modules, Register the Quill cursors module (for showing multiple users' cursors)
 Quill.register("modules/cursors", QuillCursors);
@@ -22,14 +23,26 @@ Quill.register(
   true
 );
 
-export default function Editor({ permission }) {
+// debounce function is an higher order function
+// returns a debounced version of any function you pass to it
+// function passed to it will only called after a certail dealy has passed without calling it again
+function debounce(fn, delay) {
+  let timer;
+  return (...args) => {
+    // clear previous timer if any
+    clearTimeout(timer),
+      timer = setTimeout(() => fn(...args), delay)
+  };
+}
+
+export default function Editor({ token, permission }) {
 
   // Grab docId from Zustand store
   const { currentDocId } = useDocStore();
   const docId = currentDocId
 
   // Reference to the editor DOM element and Ensure editor is only initialized once
-  const editorRef = useRef(null); 
+  const editorRef = useRef(null);
   const initializeRef = useRef(false);
 
   // Keep track of WebSocket provider and user's color
@@ -63,7 +76,7 @@ export default function Editor({ permission }) {
     ];
   }, [permission]);
 
-    // Initialize the Yjs editor + bindings
+  // Initialize the Yjs editor + bindings
   useEffect(() => {
     // Prevent double-initialization
     if (!editorRef.current || initializeRef.current) return;
@@ -128,6 +141,31 @@ export default function Editor({ permission }) {
 
     // Bind Yjs and Quill
     const ytext = ydoc.getText("quill");
+    
+
+    // load from server if IndexedDB has nothing in it
+    persistence.whenSynced.then(async () => {
+      console.log("Loaded from IndexedDB");
+      const current = ydoc.getText("quill").toString();
+      if (current.length === 0) {
+        try {
+          const fetchedDoc = await docService.getDocById(docId);
+          ytext.insert(0, fetchedDoc.doc.content);
+        } catch (err) {
+        console.error("Failed to fetch doc content:", err)
+        }
+      }
+    });
+
+    // auto-save to DB on changes
+    const saveContent = debounce(() => {
+      const textContent = ytext.toString();
+      docService.updateDoc(docId, token, textContent)
+      console.log("updated doc")
+    }, 1000)
+
+    ydoc.on("update", saveContent)
+
     new QuillBinding(ytext, quill, awareness);
 
     if (permission === "edit") {
@@ -140,7 +178,7 @@ export default function Editor({ permission }) {
     }
 
 
-// Update the list of users when awareness changes (e.g. someone joins/leaves)
+    // Update the list of users when awareness changes (e.g. someone joins/leaves)
     const updateUserList = () => {
       // Extract user info from all awareness states
       const users = [];
@@ -171,7 +209,7 @@ export default function Editor({ permission }) {
     const blurHandler = () => quill.blur();
     window.addEventListener("blur", blurHandler);
 
-    
+
     // // Log document updates from the local user
     // ytext.observe((event) => {
     //   console.log("doc changed locally", event);
@@ -192,9 +230,10 @@ export default function Editor({ permission }) {
       window.removeEventListener("beforeunload", clearLocal);
       window.removeEventListener("blur", blurHandler);
       provider.disconnect();
+      ydoc.off("update", saveContent);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [docId, permission, toolbarOptions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docId, permission]);
 
   // Update presence when username changes
   useEffect(() => {
