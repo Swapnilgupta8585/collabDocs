@@ -62,7 +62,7 @@ export default function EditorPageCollab() {
 
       <main className="max-w-7xl mx-auto px-6 py-12">
         {/* Editor in collaborative mode */}
-        <Editor permission={permission} />
+        <Editor token={token} permission={permission} />
       </main>
     </div>
   );
