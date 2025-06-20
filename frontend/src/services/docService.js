@@ -43,9 +43,8 @@ const docService = {
 
     async deleteDoc(docId) {
         try {
-            const response = await apiClient.delete(`/docs/${docId}`);
-
-            return response.data;
+            await apiClient.delete(`/docs/${docId}`);
+           return true; 
         } catch (error) {
             throw new Error(
                 error.response?.data?.error || error.message || "Something went wrong"
@@ -76,6 +75,21 @@ const docService = {
             });
             return response.data
         } catch(error){
+            throw new error(
+                error.responnse?.data?.error || error.message || "Something went wrong"
+            )
+        }
+    },
+
+    async updateDoc(docId, token, content){
+        try{
+            await apiClient.put("/docs/update",{
+                docId: docId,
+                token: token,
+                content: content,
+            });
+            return true
+        } catch(error) {
             throw new error(
                 error.responnse?.data?.error || error.message || "Something went wrong"
             )
