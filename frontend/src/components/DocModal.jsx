@@ -30,6 +30,7 @@ export default function NewDocModal({ onClose }) {
     try {
       setLoading(true);
       const newDoc = await docService.createDoc(name);
+      console.log(newDoc)
       navigate(`/editor/${newDoc.doc.id}`)
       onClose();
     } catch (err) {

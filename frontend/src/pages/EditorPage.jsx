@@ -26,6 +26,7 @@ export default function EditorPage() {
       try {
         setLoading(true);
         const { doc } = await docService.getDocById(docId);
+        console.log(doc)
         setOwnerId(doc.user_id);
         setCurrentDoc(doc.id);
       } catch {
