@@ -2,6 +2,7 @@ import axios from "axios";
 import useAuthStore from "../store/authStore";
 
 const API_URL = import.meta.env.VITE_API_URL;
+console.log(API_URL)
 
 const authService = {
     async register(full_name, email, password) {
