@@ -2,7 +2,7 @@ import axios from 'axios';
 import useAuthStore from '../store/authStore';
 
 
-const API_URL = "http://15.206.151.26:5000/api";
+const API_URL = "https://15.206.151.26:5000/api";
 
 // create axios instance with some configurations
 const apiClient = axios.create({
