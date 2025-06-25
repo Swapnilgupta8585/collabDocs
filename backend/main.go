@@ -10,6 +10,7 @@ import (
 	"github.com/Swapnilgupta8585/collabDocs/middleware"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/pressly/goose/v3"
 )
 
 type ApiConfig struct{
@@ -43,6 +44,17 @@ func main() {
 		log.Fatal("Error connecting to database:", err)
 	}
 	defer dbConn.Close()
+	
+	// Run migrations automatically
+	if err := goose.SetDialect("postgres"); err != nil{
+		log.Fatal(err)
+	}
+
+	if err := goose.Up(dbConn, "sql/schema"); err != nil{
+		log.Fatal("Failed to run migrations:", err)
+	}
+
+	log.Println("Migrations completed successfully!")
 
 	// Test database connection
 	err = dbConn.Ping()
