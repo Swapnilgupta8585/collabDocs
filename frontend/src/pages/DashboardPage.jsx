@@ -71,7 +71,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <button onClick={() => setShowModal(true)}
-            className="px-5 py-2 rounded-full cursor-pointer bg-blue-600 dark:bg-blue-500 text-white text-sm shadow-md hover:bg-blue-700 dark:hover:bg-blue-600 hover:shadow-lg hover:scale-105 transition"
+            className="px-3 py-1 sm:px-5 sm:py-2 rounded-full cursor-pointer bg-blue-600 dark:bg-blue-500 text-white text-sm shadow-md hover:bg-blue-700 dark:hover:bg-blue-600 hover:shadow-lg hover:scale-105 transition"
           >
             + New Document
           </button>
