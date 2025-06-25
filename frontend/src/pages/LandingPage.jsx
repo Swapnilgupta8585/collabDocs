@@ -26,7 +26,7 @@ export default function LandingPage() {
       >
         <div className="max-w-7xl mx-auto px-8 py-4 flex justify-between items-center">
           <h1
-            className=" text-2xl sm:text-4xl font-black tracking-tight text-blue-600 dark:text-blue-400"
+            className=" text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-blue-600 dark:text-blue-400"
 
           >
             collab<span className="text-gray-900 dark:text-gray-100">Docs</span>
