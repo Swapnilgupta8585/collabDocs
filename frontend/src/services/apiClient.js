@@ -2,7 +2,7 @@ import axios from 'axios';
 import useAuthStore from '../store/authStore';
 
 
-const API_URL = "https://6680-15-206-151-26.ngrok-free.app/api";
+const API_URL = " https://4584-15-206-151-26.ngrok-free.app/api";
 
 // create axios instance with some configurations
 const apiClient = axios.create({
