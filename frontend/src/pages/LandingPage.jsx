@@ -35,7 +35,7 @@ export default function LandingPage() {
             <div className="hover:scale-110 transition shadow-lg" >
               <Link
                 to="/login"
-                className="text-base  px-3 py-2 sm:px-5 sm:py-2 rounded-full border font-semibold border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 "
+                className="text-base px-2 py-1 sm:px-3 sm:py-2 md:px-5 md:py-2 rounded-full border font-semibold border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 "
               >
                 Sign In
               </Link>
@@ -43,7 +43,7 @@ export default function LandingPage() {
             <div  className=" hover:scale-110 transition shadow-lg">
               <Link
                 to="/register"
-                className="text-base px-3 py-2 sm:px-5 sm:py-2 rounded-full bg-blue-600 dark:bg-blue-500 text-white font-semibold shadow hover:bg-blue-700 dark:hover:bg-blue-600"
+                className="text-base px-2 py-1 sm:px-3 sm:py-2 md:px-5 md:py-2 rounded-full bg-blue-600 dark:bg-blue-500 text-white font-semibold shadow hover:bg-blue-700 dark:hover:bg-blue-600"
               >
                 Sign Up
               </Link>
