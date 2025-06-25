@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useEffect, useRef, useState, useMemo } from "react";
 import * as Y from "yjs";
 import Quill from "quill";
@@ -8,20 +9,23 @@ import QuillCursors from "quill-cursors";
 import DoUsername from "do_username";
 import randomColor from "randomcolor";
 import { IndexeddbPersistence } from "y-indexeddb";
-import QuillBetterTable from "quill-better-table";
-import ImageResize from "quill-image-resize-module-react";
 import useDocStore from "../store/docStore";
-import docService from "../services/docService"
+import docService from "../services/docService";
+import { motion } from "framer-motion";
 
-// Register Quill modules, Register the Quill cursors module (for showing multiple users' cursors)
+// Register the Quill cursors module (for showing multiple users' cursors)
 Quill.register("modules/cursors", QuillCursors);
-Quill.register(
-  {
-    "modules/better-table": QuillBetterTable,
-    "modules/imageResize": ImageResize,
-  },
-  true
-);
+
+// Shared editor container styles
+const editorContainer =
+  "flex flex-col h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100";
+const headerClasses =
+  "px-6 py-3 bg-white dark:bg-gray-900 ring-1 ring-gray-200 dark:ring-gray-700 flex items-center justify-between";
+const mainClasses = "flex-1 overflow-auto p-6 bg-gray dark:bg-black-500";
+const fieldVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.5 } }
+};
 
 // debounce function is an higher order function
 // returns a debounced version of any function you pass to it
@@ -36,21 +40,14 @@ function debounce(fn, delay) {
 }
 
 export default function Editor({ token, permission }) {
-
-  // Grab docId from Zustand store
   const { currentDocId } = useDocStore();
-  const docId = currentDocId
-
-  // Reference to the editor DOM element and Ensure editor is only initialized once
+  const docId = currentDocId;
   const editorRef = useRef(null);
   const initializeRef = useRef(false);
-
-  // Keep track of WebSocket provider and user's color
   const providerRef = useRef(null);
   const colorRef = useRef(null);
 
-  // Username and active users
-  const [username, setUsername] = useState(() => DoUsername.generate(8));
+  const [username, setUsername] = useState(() => DoUsername.generate(16));
   const [activeUsers, setActiveUsers] = useState([]);
 
   // Toolbar configuration: no toolbar for view-only
@@ -69,20 +66,16 @@ export default function Editor({ token, permission }) {
         { indent: "+1" },
       ],
       [{ direction: "rtl" }, { align: [] }],
-      ["link", "image", "video"],
-      ["clean"],
-      // table button (from quill-better-table)
-      ["table"],
+      [ "image", "video"],
     ];
   }, [permission]);
+
 
   // Initialize the Yjs editor + bindings
   useEffect(() => {
     // Prevent double-initialization
     if (!editorRef.current || initializeRef.current) return;
     initializeRef.current = true;
-
-    // Initialize Yjs doc and persistence
     const ydoc = new Y.Doc();
     const persistence = new IndexeddbPersistence(`quill-doc-${docId}`, ydoc);
     persistence.on("synced", () => {
@@ -90,20 +83,17 @@ export default function Editor({ token, permission }) {
     });
 
     // room name
-    const roomName = `doc-${docId}`;
+    const roomName = `doc-${docId}`;  
 
-    // Connect to websocket (replace with your URL)
+    // Connect to websocket 
     const provider = new WebsocketProvider(
       "wss://demos.yjs.dev/ws",
       roomName,
       ydoc
     );
     providerRef.current = provider;
-
-    // For view-only, disable sync
     if (permission !== "edit") provider.disconnect();
 
-    // Awareness protocol
     const awareness = provider.awareness;
     const color = randomColor();
     colorRef.current = color;
@@ -115,37 +105,14 @@ export default function Editor({ token, permission }) {
         toolbar: toolbarOptions,
         cursors: permission === "edit",
         history: { userOnly: true },
-        "better-table": {
-          operationMenu: {
-            items: {
-              unmergeCells: {},
-              insertRowAbove: {},
-              insertRowBelow: {},
-              insertColumnLeft: {},
-              insertColumnRight: {},
-            },
-            color: {
-              colors: ["#fff", "#f0f0f0"],
-              text: "Background Color",
-            },
-          },
-        },
       },
       readOnly: permission !== "edit",
-      placeholder: "Start writing...",
       table: false,
-      imageResize: {},
     });
-
     quill.enable(permission === "edit");
 
-    // Bind Yjs and Quill
     const ytext = ydoc.getText("quill");
-    
-
-    // load from server if IndexedDB has nothing in it
     persistence.whenSynced.then(async () => {
-      console.log("Loaded from IndexedDB");
       const current = ydoc.getText("quill").toString();
       if (current.length === 0) {
         try {
@@ -176,7 +143,6 @@ export default function Editor({ token, permission }) {
     } else {
       awareness.setLocalStateField("user", null); // Removes the user field (no presence)
     }
-
 
     // Update the list of users when awareness changes (e.g. someone joins/leaves)
     const updateUserList = () => {
@@ -210,20 +176,21 @@ export default function Editor({ token, permission }) {
     window.addEventListener("blur", blurHandler);
 
 
-    // // Log document updates from the local user
-    // ytext.observe((event) => {
-    //   console.log("doc changed locally", event);
-    // });
+    // Log document updates from the local user
+    ytext.observe((event) => {
+      console.log("doc changed locally", event);
+    });
 
-    // // Log WebSocket connection status
-    // provider.on("status", (event) => {
-    //   console.log("connection status:", event.status);
-    // });
+    // Log WebSocket connection status
+    provider.on("status", (event) => {
+      console.log("connection status:", event.status);
+    });
 
-    // // Log when synced with other peers
-    // provider.on("sync", (isSynced) => {
-    //   console.log("synced with peers:", isSynced);
-    // });
+    // Log when synced with other peers
+    provider.on("sync", (isSynced) => {
+      console.log("synced with peers:", isSynced);
+    });
+
 
     // Cleanup
     return () => {
@@ -232,8 +199,10 @@ export default function Editor({ token, permission }) {
       provider.disconnect();
       ydoc.off("update", saveContent);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docId, permission]);
+
+
 
   // Update presence when username changes
   useEffect(() => {
@@ -243,43 +212,43 @@ export default function Editor({ token, permission }) {
     }
   }, [username, permission]);
 
+
   return (
-    <div className=" flex flex-col h-screen">
-      {/* Header */}
-      <header className="px-6 py-3 bg-white shadow border-b border-gray-200 flex items-center justify-between">
-        <h1 className="text-lg font-semibold tracking-tight">
-          🧠 CollabDocs Editor
+    <div className={editorContainer}>
+      <motion.header
+        className={headerClasses}
+        initial="hidden"
+        animate="visible"
+        variants={fieldVariants}
+      >
+        <h1 className="text-lg font-semibold text-blue-500">
+          📝 Editor
         </h1>
         <input
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="border rounded px-3 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          className="border border-gray-300 dark:border-gray-600 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Your username"
         />
-      </header>
-
-      {/* Active Users */}
-      <aside className="bg-gray-50 px-6 py-2 text-sm text-gray-600 border-b border-gray-200">
+      </motion.header>
+      <motion.aside
+        className="bg-gray-50 dark:bg-gray-800 px-6 py-2 text-sm text-gray-600 dark:text-gray-300 ring-1 ring-gray-200 dark:ring-gray-700"
+        initial="hidden"
+        animate="visible"
+        variants={fieldVariants}
+      >
         Active users:
         <ul className="flex gap-4 mt-1 flex-wrap">
-          {activeUsers.map((user) => (
-            <li
-              key={user.id}
-              className="flex items-center gap-1"
-              style={{ color: user.color }}
-            >
-              ● {user.name} {user.isTyping ? "✍️" : ""}
+          {activeUsers.map((u) => (
+            <li key={u.id} style={{ color: u.color }}>
+              ● {u.name} {u.isTyping ? "✍️" : ""}
             </li>
           ))}
         </ul>
-      </aside>
-
-      {/* Editor Container */}
-      <main className="flex-1 overflow-auto bg-white ">
-        <div
-          ref={editorRef}
-          className="max-w-6xl mx-auto mt-6 p-6 bg-white rounded shadow-sm border border-gray-200"
-        />
+      </motion.aside>
+      
+      <main className={mainClasses}>
+        <div ref={editorRef} className="font-white max-w-6xl mx-auto" />
       </main>
     </div>
   );
