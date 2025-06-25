@@ -227,7 +227,7 @@ export default function Editor({ token, permission }) {
         <input
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="border border-gray-300 dark:border-gray-600 rounded px-2 sm:px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="border border-gray-300 dark:border-gray-600 rounded px-1 sm:px-2 md:px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Your username"
         />
       </motion.header>
