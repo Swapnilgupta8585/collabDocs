@@ -21,14 +21,15 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/edit/:token" element={<EditorPageCollab />} />
-          <Route path="/view/:token" element={<EditorViewPage />} />
+          
 
 
           {/*Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/editor/:docId" element={<EditorPage />} />
+            <Route path="/edit/:token" element={<EditorPageCollab />} />
+             <Route path="/view/:token" element={<EditorViewPage />} />
           </Route>
 
 
@@ -42,3 +43,6 @@ function App() {
 }
 
 export default App
+
+
+
