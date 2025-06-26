@@ -18,7 +18,7 @@ const docService = {
 
     async getUserDoc() {
         try {
-            const response = await apiClient.get("/docs?sort=desc");
+            const response = await apiClient.get("/docs");
             return response.data.docs;
         } catch (error) {
             throw new Error(
