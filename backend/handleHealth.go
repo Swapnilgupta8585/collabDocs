@@ -3,14 +3,14 @@ package main
 import "net/http"
 
 
-// checking the server health
+// handleHealth responds with a simple 200 OK status to indicate server health.
 func handleHealth(w http.ResponseWriter, r *http.Request) {
-	// setting the header, also header should be set before writing the status code
+	// Set the response content type.
 	w.Header().Set("Content-Type","text/plain; charset=utf-8")
 
-	// writing the status to the response body
+	// Write HTTP status code.
 	w.WriteHeader(http.StatusOK)
 
-	// writing the data to the response body
+	// Write status text (e.g., "OK") to the response body.
 	w.Write([]byte(http.StatusText(http.StatusOK)))
 }

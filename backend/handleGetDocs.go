@@ -1,61 +1,56 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/Swapnilgupta8585/collabDocs/internal/auth"
 	"github.com/google/uuid"
 )
 
+// handleGetDocs retrieves a document by its ID if the requesting user is the owner.
 func (cfg *ApiConfig) handleGetDocs(w http.ResponseWriter, r *http.Request) {
-	// response struct
+	// Response struct
 	type response struct {
 		Doc Doc `json:"doc"`
 	}
 
-	// get the header of request
+	// Extract the Authorization token from the header.
 	header := r.Header
-
-	// get the JWTtoken string
 	tokenString, err := auth.GetBearerToken(header)
 	if err != nil {
-		RespondWithError(w, http.StatusUnauthorized, "Error getting the token string from header", err)
+		RespondWithError(w, http.StatusUnauthorized, "Missing or invalid Authorization token", err)
 		return
 	}
 
-	// validate the token string and get the user id
+	// Validate the token and get the associated user ID.
 	userId, err := auth.ValidateJWT(tokenString, cfg.SecretToken)
 	if err != nil {
-		RespondWithError(w, http.StatusUnauthorized, "Unauthorised user", err)
+		RespondWithError(w, http.StatusUnauthorized, "Invalid or expired token", err)
 		return
 	}
 
-	// get doc by DocID
+	// Extract and parse the document ID from the path.
 	doc_id := r.PathValue("DocID")
-
-	//parse the docID to be an UUID
 	DocID, err := uuid.Parse(doc_id)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Error parsing the DocID", err)
+		RespondWithError(w, http.StatusBadRequest, "Invalid document ID format", err)
 		return
 	}
 
-	// get the doc by id from the DB
+	// Fetch the document from the database.
 	doc, err := cfg.Db.GetDocByID(r.Context(), DocID)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Error getting the doc using doc id from the DB", err)
+		RespondWithError(w, http.StatusNotFound, "Document not found", err)
 		return
 	}
 
-	// check whether the user is the owner for the doc or not
+	// Check if the user owns the document.
 	if doc.UserID != userId {
-		RespondWithError(w, http.StatusForbidden, "user is not the owner of this resource", nil)
-		fmt.Println("user is not the owner of this resource")
+		RespondWithError(w, http.StatusForbidden, "You do not have permission to view this document", nil)
 		return
 	}
 
-	// response
+	// Return the document.
 	RespondWithJSON(w, http.StatusOK, response{Doc: Doc{
 		ID:        doc.ID,
 		DocName:   doc.DocName,

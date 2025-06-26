@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Link represents a shared document link with permissions and expiration.
 type Link struct {
 	Token      string `json:"token"`
 	CreatedAt  time.Time `json:"created_at"`
@@ -24,57 +25,55 @@ type Link struct {
 
 func (cfg *ApiConfig) handleDocShare(w http.ResponseWriter, r *http.Request){
 
-	// request body
+	// Expected request body.
 	type parameter struct{
 		DocID string `json:"doc_id"`
 		Permission string `json:"permission"`
 	}
 
-	// response struct
+	// Response struct
 	type response struct {
 		Link Link `json:"link"`
 	}
 
-	// decode the request body
+	// Parse the request body.
 	reqParam := parameter{}
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&reqParam)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Error decoding the request body", err)
+		RespondWithError(w, http.StatusBadRequest, "Malformed JSON in request body", err)
 		return
 	}
 
-	// check if the permission is in valid format or not
+	// Validate permission.
 	if reqParam.Permission != "edit" && reqParam.Permission!= "view"{
-		RespondWithError(w, http.StatusBadRequest, "Invalid Permission format", nil)
+		RespondWithError(w, http.StatusBadRequest, "Permission must be 'view' or 'edit'", nil)
 		return
 	}
 
-	// get the header of request
+	// Extract and validate JWT from Authorization header.
 	header := r.Header
-
-	// get the JWTtoken string
 	tokenString, err := auth.GetBearerToken(header)
 	if err != nil {
-		RespondWithError(w, http.StatusUnauthorized, "Error getting the token string from header", err)
+		RespondWithError(w, http.StatusUnauthorized, "Missing or invalid Authorization token", err)
 		return
 	}
 
-	// validate the token string and get the user id
+	// Validate the Token 
 	_, err = auth.ValidateJWT(tokenString, cfg.SecretToken)
 	if err != nil {
-		RespondWithError(w, http.StatusUnauthorized, "Unauthorised user", err)
+		RespondWithError(w, http.StatusUnauthorized, "Invalid or expired token", err)
 		return
 	}
 
-	//parse the docID to be an UUID
+	// Parse document ID from string to UUID.
 	DocID, err := uuid.Parse(reqParam.DocID)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Error parsing the DocID", err)
+		RespondWithError(w, http.StatusBadRequest, "Invalid document ID format", err)
 		return
 	}
 
-	// get the doc by id from the DB
+	// Retrieve the document from the database.
 	doc, err := cfg.Db.GetDocByID(r.Context(), DocID)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Error getting the doc using doc id from the DB", err)
@@ -91,14 +90,14 @@ func (cfg *ApiConfig) handleDocShare(w http.ResponseWriter, r *http.Request){
 	token := make([]byte, 32)
 	_, err = rand.Read(token)
 	if err != nil{
-		RespondWithError(w, http.StatusInternalServerError, "Error creating a random token", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to generate share token", err)
 		return
 	}
 
-	// encode the random bits to a string using hexadecimal encoding
+	// Encode the random bits to a string using hexadecimal encoding
 	linkToken := hex.EncodeToString(token)
 
-	// create link with expiry of 24 hours
+	// Create the shareable link in the database with a 24-hour expiration.
 	link, err := cfg.Db.CreateLink(r.Context(), database.CreateLinkParams{
 		Token: linkToken,
 		DocID: doc.ID,
@@ -106,11 +105,11 @@ func (cfg *ApiConfig) handleDocShare(w http.ResponseWriter, r *http.Request){
 		ExpiresAt: time.Now().Add(24 * time.Hour),
 	})
 	if err != nil{
-		RespondWithError(w, http.StatusInternalServerError, "Error creating the link in the Database", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to create shareable link", err)
 		return
 	}
 
-	// response with link
+	// Return the created link.
 	RespondWithJSON(w, http.StatusCreated, response{
 		Link: Link{
 		Token: link.Token,

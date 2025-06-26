@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Doc represents a document owned by a user.
 type Doc struct{
 	ID uuid.UUID `json:"id"`
 	DocName string `json:"doc_name"`
@@ -19,53 +20,51 @@ type Doc struct{
 	Content string `json:"content"`
 }
 
-
+// handleCreateDocs handles the creation of a new document for an authenticated user.
 func (cfg *ApiConfig) handleCreateDocs(w http.ResponseWriter, r *http.Request){
 
-	// request paramter
+	// Define the expected request body parameters.
 	type parameter struct {
 		DocName string `json:"doc_name"`
 	}
 
-	// response struct
+	// Define the response structure.
 	type response struct{
 		Doc Doc `json:"doc"`
 	}
 
-	// get the header of request
+	// Extract the Authorization header and parse the Bearer token.
 	header := r.Header
-
-	// get the JWTtoken string
 	tokenString, err := auth.GetBearerToken(header)
 	if err != nil {
-		RespondWithError(w, http.StatusUnauthorized, "Error getting the token string from header", err)
+		RespondWithError(w, http.StatusUnauthorized, "Authorization token missing or invalid", err)
 		return
 	}
 
-	// validate the token string and get the user id
+	// Validate the token and extract the user ID.
 	userId, err := auth.ValidateJWT(tokenString, cfg.SecretToken)
 	if err != nil {
-		RespondWithError(w, http.StatusUnauthorized, "Unauthorised user", err)
+		RespondWithError(w, http.StatusUnauthorized, "Invalid or expired token", err)
 		return
 	}
 
-	// decode the request body
+	// Parse the JSON request body.
 	reqParam := parameter{}
 	decoder := json.NewDecoder(r.Body)
 	err = decoder.Decode(&reqParam)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Invalid JSON. Please check the request body format.", err)
+		RespondWithError(w, http.StatusBadRequest, "Malformed JSON in request body", err)
 		return
 	}
 
 	// create the doc
 	doc, err := cfg.Db.CreateDoc(r.Context(), database.CreateDocParams{DocName:reqParam.DocName, UserID: userId, Content: ""})
 	if err != nil{
-		RespondWithError(w, http.StatusInternalServerError, "Error creating a doc in the database", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to create document", err)
 		return
 	}
 
-	// respond with the doc
+	// Return the created document with HTTP 201 Created.
 	RespondWithJSON(w, http.StatusCreated, response{
 		Doc: Doc{
 			ID: doc.ID,

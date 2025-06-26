@@ -6,29 +6,29 @@ import (
 	
 )
 
-// handles POST /api/revoke path, handleRevoke revokes the refresh token so that it can not be used anymore to create or refresh new access tokens for authentication
+// handleRevoke revokes a refresh token so it can no longer be used to generate access tokens.
 func (cfg *ApiConfig) handleRevoke(w http.ResponseWriter, r *http.Request){
-	// get the string of this format : Bearer <token_string> from the request header's Authorizaation.
+	// Extract the token from the Authorization header.
 	refreshToken, err := auth.GetBearerToken(r.Header)
 	if err != nil{
-		RespondWithError(w, http.StatusBadRequest, "Error getting refresh token from request header", err)
+		RespondWithError(w, http.StatusBadRequest, "Missing or invalid Authorization header", err)
 		return
 	}
 
-	// get the refresh_token details from the database using the token_string we got from request body
+	// Retrieve token record from database.
 	RefreshTokenFromDB, err := cfg.Db.GetRefreshTokenFromToken(r.Context(), refreshToken)
 	if err != nil {
-		RespondWithError(w, http.StatusUnauthorized, "Unauthorized User", err)
+		RespondWithError(w, http.StatusUnauthorized, "Invalid or expired refresh token", err)
 		return
 	}
 
-	// update the refresh_token parametrs revoked_at and updated_at time.Now()
+	// Revoke the token by updating revoked_at and updated_at timestamps.
 	err = cfg.Db.UpdateRevokedAtAndUpdateAt(r.Context(), RefreshTokenFromDB.RefreshToken)
 	if err != nil{
-		RespondWithError(w, http.StatusInternalServerError, "Couldn't Update the revoked_at and update_at in the database for the refresh token", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to revoke refresh token in the database", err)
 		return
 	}
 	
-	// set the status code without writing any response body
+	// Respond with 204 No Content to indicate successful revocation.
     w.WriteHeader(http.StatusNoContent)
 }

@@ -10,17 +10,17 @@ import (
 
 )
 
-
+// handleLogin authenticates a user and returns access and refresh tokens.
 func (cfg *ApiConfig) handleLogin(w http.ResponseWriter, r *http.Request){
 
-	// request body
+	// Expected request body.
 	type parameter struct{
 		Email string `json:"email"`
 		Password string `json:"password"`
 		
 	}
 
-	// response payload
+	// Response struct
 	type response struct{
 		User User  `json:"user"`
 		Token string `json:"token"`
@@ -28,50 +28,51 @@ func (cfg *ApiConfig) handleLogin(w http.ResponseWriter, r *http.Request){
 
 	}
 
-	// decode the request body
+	// Decode JSON body.
 	reqParam := parameter{}
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&reqParam)
 	if err != nil{
-		RespondWithError(w, http.StatusBadRequest, "Invalid request format. Ensure email and password are provided.", err)
+		RespondWithError(w, http.StatusBadRequest, "Invalid JSON format. Provide email and password.", err)
 		return
 	}
 
-	// get user by email
+	// Fetch user by email.
 	user, err := cfg.Db.GetUserByEmail(r.Context(), reqParam.Email)
 	if err != nil{
-		RespondWithError(w, http.StatusNotFound, "No user found with the provided email", err)
+		RespondWithError(w, http.StatusNotFound, "User with provided email not found", err)
 		return
 	}
 
-	// check authentication of the user
+	// Verify password.
 	err = auth.CheckHashPassword(reqParam.Password, user.HashedPassword)
 	if err != nil{
 		RespondWithError(w, http.StatusUnauthorized, "Incorrect email or password", err)
 		return
 	}
 
-	// create accessToken
+	// Generate access token (valid for 1 hour).
 	accessToken, err := auth.MakeJWT(user.ID, cfg.SecretToken, 1 * time.Hour)
 	if err != nil{
 		RespondWithError(w, http.StatusInternalServerError, "Failed to generate access token", err)
 		return
 	}
 
-	// create refreshToken
+	// Generate refresh token (valid for 60 days).
 	refreshToken, err := auth.MakeRefreshToken()
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Failed to generate refresh token", err)
 		return
 	}
 
-	// store the refresh token in the database, expires in 60 days
+	// Store refresh token in the database.
 	refreshTokenFromDB, err := cfg.Db.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{RefreshToken: refreshToken, UserID: user.ID, ExpiredAt: time.Now().Add(60*24*time.Hour)})
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Failed to save refresh token to the database", err)
 		return
 	}
 	
+	// Respond with user info and tokens.
 	RespondWithJSON(w, http.StatusOK, response{
 		User: User{
 			ID: user.ID,

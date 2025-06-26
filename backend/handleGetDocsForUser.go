@@ -8,41 +8,37 @@ import (
 
 )
 
-
+// handleGetDocsForUser returns all documents created by the authenticated user, optionally sorted by creation time.
 func (cfg *ApiConfig) handleGetDocsForUser(w http.ResponseWriter, r *http.Request){
-	// response struct
+	// Response structure.
 	type response struct {
 		Docs []Doc `json:"docs"`
 	}
 
-	// get the header of request
+	// Extract and validate the Authorization token.
 	header := r.Header
-
-	// get the JWTtoken string
 	tokenString, err := auth.GetBearerToken(header)
 	if err != nil {
-		RespondWithError(w, http.StatusUnauthorized, "Error getting the token string from header", err)
+		RespondWithError(w, http.StatusUnauthorized, "Missing or invalid Authorization token", err)
 		return
 	}
 
 	// validate the token string and get the user id
 	userId, err := auth.ValidateJWT(tokenString, cfg.SecretToken)
 	if err != nil {
-		RespondWithError(w, http.StatusUnauthorized, "Unauthorised user", err)
+		RespondWithError(w, http.StatusUnauthorized, "Invalid or expired token", err)
 		return
 	}
 
-	// get docs for the user from DB
+	// Fetch documents created by the user.
 	docs, err := cfg.Db.GetDocsByUserID(r.Context(), userId)
 	if err != nil{
-		RespondWithError(w, http.StatusInternalServerError, "Error getting the docs", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve documents", err)
 		return
 	}
 
-	// creating a slice of Doc type
+	// Transform database docs into API response format.
 	Docs := make([]Doc, len(docs))
-
-	// populating the Docs with Doc
 	for i, doc := range docs{
 		Docs[i] = Doc{
 			ID: doc.ID,
@@ -54,16 +50,14 @@ func (cfg *ApiConfig) handleGetDocsForUser(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	// get the sort query parameter
+	// Optional sorting by `created_at`
 	sortingQuery := r.URL.Query().Get("sort")
-
-	// if desc then sort in descending order of created_at
 	if sortingQuery == "desc"{
 		sort.Slice(Docs, func(i, j int) bool {return Docs[i].CreatedAt.After(Docs[j].CreatedAt)})
 	} else {
 		sort.Slice(Docs, func(i, j int) bool {return Docs[i].CreatedAt.Before(Docs[j].CreatedAt)})
 	}
 
-	// response
+	// Return sorted documents.
 	RespondWithJSON(w, http.StatusOK, response{Docs: Docs})
 }

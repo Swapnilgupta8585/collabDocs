@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/Swapnilgupta8585/collabDocs/internal/auth"
@@ -10,15 +9,16 @@ import (
 	"github.com/google/uuid"
 )
 
+// handleUpdateDocs updates the content of a document either by the owner or via a valid edit token.
 func (cfg *ApiConfig) handleUpdateDocs(w http.ResponseWriter, r *http.Request) {
-	//request body
+	// Request body structure
 	type parameter struct {
 		DocId   string `json:"docId"`
 		Token   string `json:"token"`
 		Content string `json:"content"`
 	}
 
-	// decode the request body
+	// Decode the request body
 	reqParam := parameter{}
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&reqParam)
@@ -27,53 +27,50 @@ func (cfg *ApiConfig) handleUpdateDocs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// get the header of request
+	// Extract and validate JWT from header
 	header := r.Header
-
-	// get the JWTtoken string
 	tokenString, err := auth.GetBearerToken(header)
 	if err != nil {
-		RespondWithError(w, http.StatusUnauthorized, "Error getting the token string from header", err)
+		RespondWithError(w, http.StatusUnauthorized, "Missing or malformed Authorization header", err)
 		return
 	}
 
 	// validate the token string and get the user id
 	userId, err := auth.ValidateJWT(tokenString, cfg.SecretToken)
 	if err != nil {
-		RespondWithError(w, http.StatusUnauthorized, "Unauthorised user", err)
+		RespondWithError(w, http.StatusUnauthorized, "Invalid or expired JWT", err)
 		return
 	}
 
-	//parse the docID to be an UUID
+	// Parse the document ID
 	DocID, err := uuid.Parse(reqParam.DocId)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Error parsing the DocID", err)
+		RespondWithError(w, http.StatusBadRequest, "Invalid document ID format", err)
 		return
 	}
 
-	// get the doc by id from the DB
+	// Fetch the document by ID
 	doc, err := cfg.Db.GetDocByID(r.Context(), DocID)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Error getting the doc using doc id from the DB", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve document from database", err)
 		return
 	}
 
-	// if editor is the owner then check using userId for updating
+	// If user is the owner, allow update
 	if userId != uuid.Nil && doc.UserID == userId {
 		// update the doc's content in the DB
 		err = cfg.Db.UpdateContent(r.Context(), database.UpdateContentParams{Content: reqParam.Content, ID: doc.ID})
 		if err != nil {
-			RespondWithError(w, http.StatusInternalServerError, "Error updating the content field of the doc table", err)
+			RespondWithError(w, http.StatusInternalServerError, "Failed to update document content", err)
 			return
 		}
-		fmt.Println("updated the db with content in the doc table")
 
 		// respond with a no content status code
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
-	// if there is token in the body and user is not the owner of the doc, use token for updating the doc
+	// If user is not owner, fall back to shared link token (if provided)
 	if reqParam.Token != "" {
 		// get docinfo like docid, content and permissions(from link table)
 		docInfo, err := cfg.Db.GetDocInfoFromToken(r.Context(), reqParam.Token)
@@ -88,22 +85,24 @@ func (cfg *ApiConfig) handleUpdateDocs(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// check for permission for updating
+		// Validate edit permission
 		if docInfo.Permission != "edit" {
 			RespondWithError(w, http.StatusForbidden, "You don't have edit permission", nil)
 			return
 		}
 
-		// update the doc's content in the DB
+		// Update document content
 		err = cfg.Db.UpdateContent(r.Context(), database.UpdateContentParams{Content: reqParam.Content, ID: docInfo.ID})
 		if err != nil {
-			RespondWithError(w, http.StatusInternalServerError, "Error updating the content field of the doc table", err)
+			RespondWithError(w, http.StatusInternalServerError, "Failed to update document content", err)
 			return
 		}
-		fmt.Println("updated the db with content in the doc table")
 
 		// respond with a no content status code
 		w.WriteHeader(http.StatusNoContent)
 	}
+
+	// If neither owner nor valid edit token
+	RespondWithError(w, http.StatusForbidden, "You are not authorized to update this document", nil)
 
 }

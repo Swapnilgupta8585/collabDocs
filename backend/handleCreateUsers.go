@@ -12,19 +12,20 @@ import (
 	"github.com/google/uuid"
 )
 
+// User represents a user account.
 type User struct {
 	ID        uuid.UUID `json:"id"`
 	FullName  string    `json:"full_name"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
-	Password  string    `json:"-"`
+	Password  string    `json:"-"` // Excluded from JSON responses
 }
 
-
+// handleCreateUsers registers a new user and stores their hashed password securely.
 func (cfg *ApiConfig) handleCreateUsers(w http.ResponseWriter, r *http.Request) {
 
-	// request paramter
+	// Define the expected JSON request body.
 	type parameter struct {
 		FullName string `json:"full_name"`
 		Email    string `json:"email"`
@@ -32,28 +33,28 @@ func (cfg *ApiConfig) handleCreateUsers(w http.ResponseWriter, r *http.Request) 
 		
 	}
 
-	// response payload
+	// Define the structure of the JSON response.
 	type response struct {
 		User User `json:"user"`
 	}
 
-	// decode the request body
+	// Decode the JSON request body into the parameter struct.
 	reqParam := parameter{}
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&reqParam)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Invalid JSON. Please check the request body format.", err)
+		RespondWithError(w, http.StatusBadRequest, "Malformed JSON in request body", err)
 		return
 	}
 
-	// create a hash password for the given password
+	// Hash the user's password before storing it.
 	hashedPassword, err := auth.HashPassword(reqParam.Password)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Failed to securely hash the password", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to hash password", err)
 		return
 	}
 
-	// create user in the database
+	// Insert the new user into the database.
 	user, err := cfg.Db.CreateUser(r.Context(), database.CreateUserParams{
 		FullName:       reqParam.FullName,
 		Email:          reqParam.Email,
@@ -64,7 +65,7 @@ func (cfg *ApiConfig) handleCreateUsers(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	//respond with user(withour hash password ofcourse)
+	// Return the newly created user (without the password).
 	RespondWithJSON(w, http.StatusCreated, response{User: User{
 		ID:        user.ID,
 		FullName:  user.FullName,

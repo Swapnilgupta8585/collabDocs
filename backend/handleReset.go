@@ -1,32 +1,30 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 
 )
 
 
-
+// handleReset deletes all users in the database — only allowed in a dev environment.
 func (cfg *ApiConfig) handleReset(w http.ResponseWriter, r *http.Request){
 
-	// dangerous endpoints should only be accessed in a local environment
+	// Protect against accidental use in non-dev environments.
 	if os.Getenv("PLATFORM") != "dev"{
-		RespondWithError(w, http.StatusForbidden, "No permission", nil)
+		RespondWithError(w, http.StatusForbidden, "Access denied: Not allowed in this environment", nil)
 		return
 	}
 
-	// Delete all users from the database
+	// Attempt to delete all users.
 	err := cfg.Db.DeleteAllUser(r.Context())
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Error deleting the users from the DB", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to delete users from the database", err)
 		return
 	}
-	fmt.Println("Deleted All users From the Database Successfully!")
 
 	// response body
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Deleted all the users successfully"))
+	w.Write([]byte("All users deleted successfully"))
 }
