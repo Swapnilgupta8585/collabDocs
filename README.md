@@ -31,7 +31,7 @@ I built CollabDocs because:
 | **Real-time Sync** | Yjs, Quill, y-websocket                                     |
 | **Authentication** | JWT & Refresh Token                                |
 | **Deployment**     | AWS EC2 (t2.micro) for backend • Vercel for frontend
-|  
+ 
 
      
 
@@ -47,8 +47,8 @@ collabDocs/
 │   ├── main.go
 │   ├── handlers*            
 │   ├── internal/
-│          ├──auth/            
-│   └──database/        
+│   │       ├──auth/            
+│   ├──database/        
 │   ├── middleware/
 │   │      ├──cors.go
 │   ├──sql/          
@@ -84,7 +84,7 @@ collabDocs/
 ## 🛠️ Installation
 
 
-## 🖥️ Backend Setup
+### 🖥️ Backend Setup
 
 1. **Clone & enter**  
    ``` bash
@@ -127,7 +127,8 @@ go run main.go
 > Your API will be available at http://localhost:5000.
 
 
-🌐 Frontend Setup
+### 🌐 Frontend Setup
+
 1. **Enter the frontend folder**
 
 ```
