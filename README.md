@@ -72,11 +72,14 @@ collabDocs/
 ## ✨ Key Features
 
 - **Real-Time Collaboration**: Yjs + y-websocket for instant multi-user editing  
+- **Offline Support**: Seamless editing even without internet; syncs when back online  
+- **User Presence & Awareness**: See who’s online and where they’re editing in real time 
 - **Rich Text Editing**: Quill.js Editor
 -  **Robust Backend & Database**: Go , SQLC for type-safe queries, Goose for migrations  
 - **Secure Auth Flow**: JWT access & refresh tokens, CORS  
 - **Document Sharing**: Tokenized URLs with view/edit permissions  
 - **Responsive UI**: Tailwind CSS + Framer Motion for smooth animations 
+- **Dark & Beautiful Theme**: Elegant dark mode UI for a focused writing experience 
 - **Deployment**: AWS EC2 (t2.micro) for backend • Vercel for frontend  
 
 
