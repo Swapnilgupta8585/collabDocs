@@ -90,10 +90,11 @@ collabDocs/
 ### 🖥️ Backend Setup
 
 1. **Clone & enter**  
-   ``` bash
-   git clone https://github.com/Swapnilgupta8585/collabDocs.git
-   cd collabDocs/backend
-   ```
+
+``` bash
+git clone https://github.com/Swapnilgupta8585/collabDocs.git
+cd collabDocs/backend
+```
 2. **Install dependencies & generate DB code**
 
 ```bash
