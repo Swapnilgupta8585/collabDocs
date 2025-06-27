@@ -1,7 +1,7 @@
 
 # 🎉 CollabDocs
 
-> This is CollabDocs! A real-time collaborative document editor built with React, Yjs, Quill and Golang.
+> This is CollabDocs! A real-time collaborative document editor built with Golang, React, Yjs and Quill.
 
 
 ## 🚀 Live Demo
